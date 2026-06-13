@@ -1,0 +1,54 @@
+Hack the Paradise (HTP) Powered by JENADI
+
+1. WattsUp (WU):
+    - Diese Wasserkraftanlagen sind steinalt - 125 Jahre Strom in Jena
+    - Es gibt Wasserstände, Wetterdaten und ein Pythonskript für neue Wasserstanddaten
+    - Folien sind online. Damit ist meine Aufzeichnung obsolet
+
+2. No Time to waste (NTTW):
+    - Problem: Keine gute Routenplanung für Müllabfuhr :(
+    - Lösung: gute Routenplanung für Müllabfuhr :)
+        - (das ding ist massiv groß)
+        - was tun bei Sackgasse ohne Wendehammer?
+            - 80m rückwärts???!?!?!?
+        - sie haben nur "Müllsoftware"
+            - Routenplanung in dieser software ist Zitat "mehr schlecht als recht und das ist positiv ausgedrückt"
+        - Geodatenquelle: GIS-Daten (von Stadt) und OSM
+        - GIS-Daten enthalten Straßenbreiten
+        - Ringwiese ist hardcore schwer, absoluter Vollbruch
+        - Routen sind nicht fest, können sich also ändern.
+            - z.B. auf Dorf bekommt man das Auto nicht voll
+
+3. DimTheLighs (DTL):
+    - Fällt nicht weg :party:
+    - 14k "Leuchtpunkte", 300 Schaltkästen
+        - Dimmen kostet massig geld
+    - Fast alle Lampen haben ein NFC möglichkeit zum Beschreiben der Netzwerke
+        - DALI protocol
+    - Batterie muss so 2-3 Tage halten
+        - Wiederaufladbar
+    - schreibt in den NFC chip
+    - kann auch sachen aus den Chip auslesen und zurückgeben um besser zu optimisieren.
+
+
+4. Talk to me (TTM):
+    - Sprachassistent für JENADI
+    - 130 Veranstaltungen pro Jahr - 4000 Besucher
+    - Keine Tastatur/Toruchscreen
+    - Herausforderung: Opensource
+        - also Spracherkennung, Verabeitung mit KI und TTS
+    - Quellen sollen erkennbar sein
+    - Weiterentwickelbar
+
+
+Rahmenbedingungen:
+    - OPENSOURCE!!!!!
+    - Muss weiter genutzt werden können, also Dokumentation
+    - Kulturgutschein als Gewinn, wow, gewinner bekommt mehr.
+    - Bewertungskriterien:
+        - Technische Umsetzung
+        - Nutzerzenrerung & Praxistauglichkeit
+        - Doku & Präsi
+        - Kreativität und Inotvationsgrad
+        - Teamarbeit & Zusammenarbeit
+        - Zukunfspotenzial & Weiterentwickelung
