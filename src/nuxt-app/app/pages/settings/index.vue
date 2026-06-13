@@ -2,6 +2,9 @@
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 
+// gRPC imports wurden in den serverseitigen API-Endpunkt verschoben
+
+
 const fileRef = ref<HTMLInputElement>()
 
 const profileSchema = z.object({
@@ -15,9 +18,9 @@ const profileSchema = z.object({
 type ProfileSchema = z.output<typeof profileSchema>
 
 const profile = reactive<Partial<ProfileSchema>>({
-  name: 'Benjamin Canac',
+  name: 'Dim The Light',
   email: 'ben@nuxtlabs.com',
-  username: 'benjamincanac',
+  username: 'dimTheLight',
   avatar: undefined,
   bio: undefined
 })
@@ -45,6 +48,26 @@ function onFileChange(e: Event) {
 function onFileClick() {
   fileRef.value?.click()
 }
+
+
+// Beispiel-Funktion, um den Downlink über unser neues API-Backend auszuführen:
+async function triggerDownlink() {
+  try {
+    const response = await $fetch('/api/enqueue_downlink')
+    toast.add({
+      title: 'Downlink gesendet!',
+      description: 'ID: ' + response.id,
+      color: 'success'
+    })
+  } catch (error) {
+    toast.add({
+      title: 'Fehler beim Senden',
+      description: String(error),
+      color: 'error'
+    })
+  }
+}
+
 </script>
 
 <template>
@@ -97,5 +120,12 @@ function onFileClick() {
         />
       </UFormField>
     </UPageCard>
+      <!-- Testbereich für Downlink-Auslösung -->
+      <UInput placeholder="0x123456789abcdef" />
+      <UButton
+        name="test_btn"
+        label="Test senden"
+        @click="triggerDownlink()"
+      />
   </UForm>
 </template>

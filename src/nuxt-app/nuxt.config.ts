@@ -21,6 +21,12 @@ export default defineNuxtConfig({
     },
   },
 
+  nitro: {
+    experimental: {
+      database: true
+    }
+  },
+
   compatibilityDate: '2024-07-11',
 
   eslint: {

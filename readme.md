@@ -31,3 +31,16 @@
         - Installation:
             - `sudo apt install python3-py`
             - `sudo apt install python3-pyproj`
+
+
+- Daten über chirpStack API senden
+- API Key liegt unter Tenant -> API Keys
+    - Wo ist Unterschied zwischen GRPC_KEY und XXX
+
+- Wir brauchen Daten:
+    - astroDim 5 Werte als json senden
+    - Helligkeit
+    - 3 Keys (chirpStack-intern)
+- Daten über LoRaWAN an die Lampen senden
+
+Notiz an Dennis (Server starten):    HOST=0.0.0.0 pnpm run dev

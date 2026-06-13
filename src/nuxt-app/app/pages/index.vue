@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+
+const searchQuery = ref('')
 
 </script>
 
@@ -11,17 +14,18 @@
         </template>
       </UDashboardNavbar>
     </template>
-
+    
     <template #body>
       <div class="flex flex-wrap items-center justify-between gap-1.5">
         <UInput
           class="max-w-sm"
           icon="i-lucide-search"
           placeholder="Lampen filtern..."
+          v-model="searchQuery"
         />
       </div>
       <ClientOnly fallback="Karte wird geladen...">
-        <LeafletMap />
+        <LeafletMap :search-query="searchQuery" />     
       </ClientOnly>
     </template>
   </UDashboardPanel>
