@@ -10,14 +10,41 @@ export default defineEventHandler(async (event) => {
   // WICHTIG: Die URL muss genau "api.DeviceService/Enqueue" lauten (nicht chirpstack.api...)
   const serverUrl = "https://chirpstack.jena.de/api.DeviceService/Enqueue";
 
-  const devEui = "058f765deee4c078";
+  const body = await readBody(event).catch(() => ({}));
+  let devEui = "058f765deee4c078";
+  let dataBytes = [100]; // default
+
+  if (body?.payload) {
+    const val = String(body.payload).trim();
+    const cleanVal = val.replace(/^0x/i, '');
+    
+    // Prüfen ob Eingabe eine gültige DevEUI ist (exakt 16 Hex-Zeichen)
+    if (cleanVal.length === 16 && /^[0-9a-fA-F]+$/.test(cleanVal)) {
+      devEui = cleanVal.toLowerCase();
+    } 
+    // Prüfen ob es eine einfache Zahl ist (z.B. "50" für Helligkeit)
+    else if (!isNaN(Number(val)) && val !== "") {
+      dataBytes = [Number(val)];
+    } 
+    // Andernfalls: Versuchen als Hex-String (Payload) zu interpretieren
+    else if (cleanVal.length % 2 === 0 && /^[0-9a-fA-F]+$/.test(cleanVal)) {
+      dataBytes = [];
+      for (let i = 0; i < cleanVal.length; i += 2) {
+        dataBytes.push(parseInt(cleanVal.slice(i, i + 2), 16));
+      }
+    } 
+    // Fallback: Als reinen Text (Bytes) senden
+    else {
+      dataBytes = Array.from(new TextEncoder().encode(val));
+    }
+  }
 
   const item = new DeviceQueueItem();
   // WICHTIG: Die JS/TS Methoden von Protobuf nutzen immer camelCase (setDevEui, nicht set_dev_eui)
   item.setDevEui(devEui);
   item.setFPort(1);
   item.setConfirmed(false);
-  item.setData(new Uint8Array([1, 2, 3]));
+  item.setData(new Uint8Array(dataBytes));
 
   const req = new EnqueueDeviceQueueItemRequest();
   req.setQueueItem(item);

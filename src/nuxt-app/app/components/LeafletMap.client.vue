@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount } from 'vue'
+import { ref, shallowRef, watch, onBeforeUnmount } from 'vue'
 import 'leaflet/dist/leaflet.css'
 import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
@@ -63,7 +63,7 @@ const url = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
 const attribution = '&copy; <a href="https://carto.com/">CARTO</a>'
 
 // Punkte laden: [lat, lng, id, brightness]
-const allPoints = ref<[number, number, number, string, number][]>([])
+const allPoints = shallowRef<[number, number, number, string, number][]>([])
 
 async function loadPoints() {
   try {
@@ -127,6 +127,7 @@ function updateMarkers() {
   clusterGroup.clearLayers()
 
   // 2. Die aktuell gefilterten Marker neu bauen
+  const markers: L.Marker[] = []
   filteredPoints.value.forEach(([pid, lat, long, light_point_nr, brightness]) => {
     const marker = L.marker([lat, long], {
 
@@ -137,8 +138,9 @@ function updateMarkers() {
       isOpen.value = true
       emit('pin-click', { pid, lat, long, light_point_nr, brightness})
     })
-    clusterGroup!.addLayer(marker)
+    markers.push(marker)
   })
+  clusterGroup!.addLayers(markers)
 }
 
 function setCursorStyle(drawing: boolean) {

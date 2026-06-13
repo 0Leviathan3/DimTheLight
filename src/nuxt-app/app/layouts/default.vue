@@ -30,12 +30,6 @@ const links = [[{
     onSelect: () => {
       open.value = false
     }
-  }, {
-    label: 'Mitglieder',
-    to: '/settings/members',
-    onSelect: () => {
-      open.value = false
-    }
   }]
 }]] satisfies NavigationMenuItem[][]
 
@@ -59,7 +53,7 @@ onMounted(async () => {
       :ui="{ footer: 'lg:border-t lg:border-default' }"
     >
       <template #header="{ collapsed }">
-        <p>Hier logo</p>
+        <img src="/logo.png" alt="Logo" class="h-8 w-auto" />
       </template>
 
       <template #default="{ collapsed }">

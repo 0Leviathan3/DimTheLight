@@ -10,15 +10,15 @@ useHead({
     { key: 'theme-color', name: 'theme-color', content: color }
   ],
   link: [
-    { rel: 'icon', href: '/favicon.ico' }
+    { rel: 'icon', href: '/logo.png' }
   ],
   htmlAttrs: {
     lang: 'de'
   }
 })
 
-const title = 'Nuxt Dashboard Vorlage'
-const description = 'Eine professionelle Dashboard-Vorlage auf Basis von Nuxt UI mit mehreren Seiten, Datenvisualisierung und umfassenden Verwaltungsfunktionen für leistungsstarke Admin-Oberflächen.'
+const title = 'Dim The Light - Dashboard'
+const description = 'Eine App um die Straßenbeleuchtung zu steuern und zu überwachen.'
 
 useSeoMeta({
   title,

@@ -9,6 +9,7 @@ interface Region {
   id: string
   name: string
   color: string
+  brightness: number
   shapes: DrawnShape[]
   pinIds: string[]
   createdAt: string
@@ -17,13 +18,16 @@ interface Region {
 const isModalOpen = ref(false)
 const regionName = ref('')
 const regionColor = ref('#3b82f6')
+const regionBrightness = ref(100)
 const isDrawingMode = ref(false)
+const isSyncing = ref(false)
+const toast = useToast()
 
 // Temporär gespeicherte Zeichnungsdaten
 const pendingDrawing = ref<{ shapes: DrawnShape[]; pinIds: string[] } | null>(null)
 
 // Gespeicherte Regionen
-const regions = ref<Region[]>([])
+const regions = useLocalStorage<Region[]>('saved-regions', [])
 
 // Ausgewählte Region für Detail-Ansicht
 const selectedRegion = ref<Region | null>(null)
@@ -74,8 +78,25 @@ function startExtending(region: Region) {
   isDrawingMode.value = true
 }
 
+// Helligkeit für eine Region in der Datenbank aktualisieren
+async function updateRegionBrightness(region: Region) {
+  if (!region.pinIds.length) return
+  
+  try {
+    await $fetch('/api/dbController', {
+      method: 'POST',
+      body: {
+        light_point_nr: region.pinIds,
+        brightness: region.brightness
+      }
+    })
+  } catch (err) {
+    console.error('Fehler beim Aktualisieren der Helligkeit:', err)
+  }
+}
+
 // Region wurde auf der Karte gezeichnet (mehrere Lassos)
-function onRegionDrawn(payload: { shapes: DrawnShape[]; pinIds: string[] }) {
+async function onRegionDrawn(payload: { shapes: DrawnShape[]; pinIds: string[] }) {
   if (editingRegionId.value) {
     // Bestehende Region erweitern
     const region = regions.value.find(r => r.id === editingRegionId.value)
@@ -87,6 +108,9 @@ function onRegionDrawn(payload: { shapes: DrawnShape[]; pinIds: string[] }) {
       if (selectedRegion.value?.id === region.id) {
         selectedRegion.value = { ...region }
       }
+      
+      // Neue Laternen auf die aktuelle Helligkeit der Region setzen
+      await updateRegionBrightness(region)
     }
     editingRegionId.value = null
   } else {
@@ -97,13 +121,14 @@ function onRegionDrawn(payload: { shapes: DrawnShape[]; pinIds: string[] }) {
 }
 
 // Region speichern
-function saveRegion() {
+async function saveRegion() {
   if (!regionName.value || !pendingDrawing.value) return
 
   const newRegion: Region = {
     id: crypto.randomUUID(),
     name: regionName.value,
     color: regionColor.value,
+    brightness: regionBrightness.value,
     shapes: pendingDrawing.value.shapes,
     pinIds: pendingDrawing.value.pinIds,
     createdAt: new Date().toLocaleDateString('de-DE', {
@@ -117,10 +142,14 @@ function saveRegion() {
 
   regions.value.push(newRegion)
 
+  // In DB schreiben
+  await updateRegionBrightness(newRegion)
+
   // Zurücksetzen
   isModalOpen.value = false
   regionName.value = ''
   regionColor.value = '#3b82f6'
+  regionBrightness.value = 100
   pendingDrawing.value = null
 }
 
@@ -129,6 +158,8 @@ function cancelSave() {
   isModalOpen.value = false
   pendingDrawing.value = null
   regionName.value = ''
+  regionColor.value = '#3b82f6'
+  regionBrightness.value = 100
 }
 
 // Region löschen
@@ -144,6 +175,21 @@ function deleteRegion(id: string) {
 function showRegionDetail(region: Region) {
   selectedRegion.value = region
   isDetailOpen.value = true
+}
+
+// Helligkeiten synchronisieren
+async function syncDownlinks() {
+  if (isSyncing.value) return
+  isSyncing.value = true
+  try {
+    const res: any = await $fetch('/api/syncDownlinks', { method: 'POST' })
+    toast.add({ title: 'Synchronisiert', description: res.message, color: 'green' })
+  } catch (err: any) {
+    const errorMsg = err.data?.message || err.statusMessage || err.message || 'Fehler beim Synchronisieren';
+    toast.add({ title: 'Fehler', description: errorMsg, color: 'red' })
+  } finally {
+    isSyncing.value = false
+  }
 }
 </script>
 
@@ -164,6 +210,18 @@ function showRegionDetail(region: Region) {
             Erweitere: <strong>{{ regions.find(r => r.id === editingRegionId)?.name }}</strong>
           </span>
 
+          <UButton
+            v-if="!isDrawingMode"
+            icon="i-lucide-refresh-cw"
+            color="secondary"
+            variant="solid"
+            size="md"
+            class="rounded-full"
+            :loading="isSyncing"
+            @click="syncDownlinks"
+          >
+            Aktualisieren
+          </UButton>
           <UButton
             v-if="!isDrawingMode"
             icon="i-lucide-pencil"
@@ -212,57 +270,65 @@ function showRegionDetail(region: Region) {
             </h3>
           </div>
 
-          <div v-if="regions.length === 0" class="flex-1 flex items-center justify-center p-6">
-            <div class="text-center text-gray-400 dark:text-gray-500">
-              <UIcon name="i-lucide-map" class="w-10 h-10 mx-auto mb-3 opacity-50" />
-              <p class="text-sm">Noch keine Regionen.</p>
-              <p class="text-xs mt-1">Klicke auf „Region zeichnen" und male Bereiche auf der Karte.</p>
-            </div>
-          </div>
-
-          <div v-else class="flex-1 divide-y divide-gray-100 dark:divide-gray-800">
-            <div
-              v-for="region in regions"
-              :key="region.id"
-              class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors group"
-              @click="showRegionDetail(region)"
-            >
-              <div class="flex items-start gap-3">
-                <div
-                  class="w-4 h-4 rounded-full mt-0.5 shrink-0"
-                  :style="{ backgroundColor: region.color }"
-                />
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                    {{ region.name }}
-                  </p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {{ region.pinIds.length }} Laternen · {{ region.shapes.length }} {{ region.shapes.length === 1 ? 'Bereich' : 'Bereiche' }}
-                  </p>
-                  <p class="text-xs text-gray-400 dark:text-gray-500">
-                    {{ region.createdAt }}
-                  </p>
-                </div>
-                <!-- + Button zum Erweitern -->
-                <UButton
-                  icon="i-lucide-plus"
-                  color="primary"
-                  variant="ghost"
-                  size="xs"
-                  class="opacity-0 group-hover:opacity-100 transition-opacity"
-                  @click.stop="startExtending(region)"
-                />
-                <UButton
-                  icon="i-lucide-trash-2"
-                  color="error"
-                  variant="ghost"
-                  size="xs"
-                  class="opacity-0 group-hover:opacity-100 transition-opacity"
-                  @click.stop="deleteRegion(region.id)"
-                />
+          <ClientOnly>
+            <div v-if="regions.length === 0" class="flex-1 flex items-center justify-center p-6">
+              <div class="text-center text-gray-400 dark:text-gray-500">
+                <UIcon name="i-lucide-map" class="w-10 h-10 mx-auto mb-3 opacity-50" />
+                <p class="text-sm">Noch keine Regionen.</p>
+                <p class="text-xs mt-1">Klicke auf „Region zeichnen" und male Bereiche auf der Karte.</p>
               </div>
             </div>
-          </div>
+
+            <div v-else class="flex-1 divide-y divide-gray-100 dark:divide-gray-800">
+              <div
+                v-for="region in regions"
+                :key="region.id"
+                class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors group"
+                @click="showRegionDetail(region)"
+              >
+                <div class="flex items-start gap-3">
+                  <div
+                    class="w-4 h-4 rounded-full mt-0.5 shrink-0"
+                    :style="{ backgroundColor: region.color }"
+                  />
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {{ region.name }}
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      {{ region.pinIds.length }} Laternen · {{ region.shapes.length }} {{ region.shapes.length === 1 ? 'Bereich' : 'Bereiche' }} · {{ region.brightness }}%
+                    </p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500">
+                      {{ region.createdAt }}
+                    </p>
+                  </div>
+                  <!-- + Button zum Erweitern -->
+                  <UButton
+                    icon="i-lucide-plus"
+                    color="primary"
+                    variant="ghost"
+                    size="xs"
+                    class="opacity-0 group-hover:opacity-100 transition-opacity"
+                    @click.stop="startExtending(region)"
+                  />
+                  <UButton
+                    icon="i-lucide-trash-2"
+                    color="error"
+                    variant="ghost"
+                    size="xs"
+                    class="opacity-0 group-hover:opacity-100 transition-opacity"
+                    @click.stop="deleteRegion(region.id)"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <template #fallback>
+              <div class="flex-1 flex items-center justify-center p-6">
+                <UIcon name="i-lucide-loader-2" class="w-6 h-6 animate-spin text-gray-400" />
+              </div>
+            </template>
+          </ClientOnly>
         </div>
       </div>
 
@@ -291,6 +357,18 @@ function showRegionDetail(region: Region) {
                     class="h-8 w-10 cursor-pointer rounded border-0 bg-transparent p-0"
                   />
                   <span class="text-sm text-gray-500">{{ regionColor }}</span>
+                </div>
+              </UFormField>
+
+              <UFormField label="Helligkeit" required>
+                <div class="flex items-center gap-4">
+                  <input 
+                    type="range" 
+                    v-model.number="regionBrightness" 
+                    min="0" max="100" 
+                    class="flex-1 accent-primary-500" 
+                  />
+                  <span class="text-sm w-12 text-right">{{ regionBrightness }}%</span>
                 </div>
               </UFormField>
             </div>
@@ -339,6 +417,22 @@ function showRegionDetail(region: Region) {
                   {{ selectedRegion.shapes.length }} {{ selectedRegion.shapes.length === 1 ? 'Bereich' : 'Bereiche' }}
                   · Erstellt am {{ selectedRegion.createdAt }}
                 </p>
+              </div>
+
+              <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                <label class="text-sm font-medium text-gray-900 dark:text-white block mb-2">
+                  Helligkeit anpassen
+                </label>
+                <div class="flex items-center gap-4">
+                  <input 
+                    type="range" 
+                    v-model.number="selectedRegion.brightness" 
+                    min="0" max="100" 
+                    class="flex-1 accent-primary-500"
+                    @change="updateRegionBrightness(selectedRegion)"
+                  />
+                  <span class="text-sm w-12 text-right">{{ selectedRegion.brightness }}%</span>
+                </div>
               </div>
 
               <!-- Bereich erweitern Button -->

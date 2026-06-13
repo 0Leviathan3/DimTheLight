@@ -50,10 +50,15 @@ function onFileClick() {
 }
 
 
+const testInput = ref('')
+
 // Beispiel-Funktion, um den Downlink über unser neues API-Backend auszuführen:
 async function triggerDownlink() {
   try {
-    const response = await $fetch('/api/enqueue_downlink')
+    const response = await $fetch('/api/enqueue_downlink', {
+      method: 'POST',
+      body: { payload: testInput.value }
+    })
     toast.add({
       title: 'Downlink gesendet!',
       description: 'ID: ' + response.id,
@@ -121,7 +126,7 @@ async function triggerDownlink() {
       </UFormField>
     </UPageCard>
       <!-- Testbereich für Downlink-Auslösung -->
-      <UInput placeholder="0x123456789abcdef" />
+      <UInput v-model="testInput" placeholder="0x123456789abcdef oder Wert" />
       <UButton
         name="test_btn"
         label="Test senden"
